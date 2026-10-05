@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+
+
+@layer components {
+
+    .overprint {
+        filter: blur(0.025em) url("#tone-curve");
+      }
+      
+}
+
