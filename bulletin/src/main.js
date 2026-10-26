@@ -1,4 +1,5 @@
 import "./style.css";
+import "./auth.js";
 
 const bulletinForm = document.querySelector("#bulletin-form");
 const bulletinInput = document.querySelector("#bulletin-content");
@@ -75,11 +76,3 @@ function createBulletin(content) {
 
   return article;
 }
-
-import { supabase } from "./supabase.js";
-
-async function testConnection() {
-  const { data, error } = await supabase.from("posts").select("*");
-  console.log({ data, error });
-}
-testConnection();
