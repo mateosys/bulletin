@@ -1,7 +1,9 @@
 import "./style.css";
 import "./auth.js";
 import { supabase } from "./supabase.js";
+import { profileUsername } from "./route.js";
 
+// bulletin form content
 const bulletinForm = document.querySelector("#bulletin-form");
 const bulletinInput = document.querySelector("#bulletin-content");
 const characterCount = document.querySelector("#character-count");
@@ -9,6 +11,15 @@ const bulletinFeed = document.querySelector("#bulletin-feed");
 const publishButton = bulletinForm.querySelector('button[type="submit"]');
 const postError = document.querySelector("#post-error");
 const feedStatus = document.querySelector("#feed-status");
+
+// profile content
+const profileDetails = document.querySelector("#profile-details");
+const profileUsernameElement = document.querySelector("#profile-username");
+const profileName = document.querySelector("#profile-name");
+const profileBio = document.querySelector("#profile-bio");
+const profileJoined = document.querySelector("#profile-joined");
+const profileStatus = document.querySelector("#profile-status");
+const profileFeed = document.querySelector("#profile-feed");
 
 const maximumCharacters = bulletinInput.maxLength;
 
@@ -78,7 +89,7 @@ async function loadFeed() {
     return;
   }
 
-  bulletinFeed.replaceChildren(...posts.map(createBulletin));
+  bulletinFeed.replaceChildren(...posts.map((post) => createBulletin(post)));
 
   if (posts.length === 0) {
     feedStatus.textContent = "No bulletins yet. Post the first one!";
@@ -87,7 +98,66 @@ async function loadFeed() {
   }
 }
 
-function createBulletin(post) {
+// load profile 
+async function loadProfile(username) {
+  profileStatus.textContent = "Loading profile…";
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, bio, created_at")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    profileStatus.textContent = "This profile couldn't be loaded. Refresh to try again.";
+    return;
+  }
+
+  if (!profile) {
+    document.title = "Not found · Bulletin";
+    profileStatus.textContent = `No one goes by @${username} here.`;
+    return;
+  }
+
+  document.title = `${profile.display_name} (@${profile.username}) · Bulletin`;
+
+  profileUsernameElement.textContent = profile.username;
+  profileName.textContent = profile.display_name;
+  profileBio.textContent = profile.bio ?? "";
+  profileBio.hidden = !profile.bio;
+
+  const joined = new Date(profile.created_at);
+  profileJoined.dateTime = joined.toISOString();
+  profileJoined.textContent = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(joined);
+
+  profileDetails.hidden = false;
+  profileStatus.textContent = "Loading bulletins…";
+
+  const { data: posts, error: postsError } = await supabase
+    .from("posts")
+    .select(postColumns)
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (postsError) {
+    console.error(postsError);
+    profileStatus.textContent = "Bulletins couldn't be loaded. Refresh to try again.";
+    return;
+  }
+
+  profileFeed.replaceChildren(
+    ...posts.map((post) => createBulletin(post, { showActions: false }))
+  );
+
+  profileStatus.textContent =
+    posts.length === 0 ? `${profile.display_name} hasn't posted yet.` : "";
+}
+
+function createBulletin(post, { showActions = true } = {}) {
   const article = document.createElement("article");
   article.className = "rounded-2xl border border-stone-300 bg-white p-5";
   article.dataset.postId = post.id;
@@ -95,8 +165,8 @@ function createBulletin(post) {
   article.innerHTML = `
     <header class="flex items-start justify-between gap-4">
       <div>
-        <h3 class="bulletin-author font-semibold"></h3>
-        <p class="text-sm text-stone-500">
+          <h3 class="font-semibold"><a class="bulletin-author hover:underline"></a></h3>        
+          <p class="text-sm text-stone-500">
           <time></time><span class="bulletin-edited"> · Edited</span>
         </p>
       </div>
@@ -123,13 +193,20 @@ function createBulletin(post) {
     timeStyle: "short",
   }).format(createdAt);
 
-  article.querySelector(".bulletin-edited").hidden = post.updated_at === post.created_at;
-  article.querySelector(".bulletin-author").textContent =
-    post.profiles?.display_name ?? "Unknown";
+  article.querySelector(".bulletin-edited").hidden =
+    post.updated_at === post.created_at;
+
+  const authorLink = article.querySelector(".bulletin-author");
+  
+  authorLink.textContent = post.profiles?.display_name ?? "Unknown";
+    if (post.profiles) {
+      authorLink.href = `/u/${post.profiles.username}`;
+    }
   article.querySelector(".bulletin-content").textContent = post.content;
 
   // Only show Edit and Delete on your own posts
-  article.querySelector(".bulletin-actions").hidden = post.user_id !== currentUserId;
+  article.querySelector(".bulletin-actions").hidden =
+  !showActions || post.user_id !== currentUserId;
 
   return article;
 }
@@ -261,6 +338,13 @@ async function deleteBulletin(article) {
 supabase.auth.onAuthStateChange((event, session) => {
   currentUserId = session?.user.id ?? null;
 
+  if (profileUsername) {
+    if (event === "INITIAL_SESSION") {
+      setTimeout(() => loadProfile(profileUsername), 0);
+    }
+    return;
+  }
+  
   if (!session) {
     bulletinFeed.replaceChildren();
     return;

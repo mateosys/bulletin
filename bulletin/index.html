@@ -18,8 +18,18 @@
       <div
         class="flex justify-between items-center mx-auto px-5 py-4 max-w-2xl"
       >
-      
-        <a href="/" class="font-bold text-xl tracking-tight"><img class="w-auto h-4" src="/SVG/logo.svg" alt=""></a>
+        <a href="/" class="font-bold text-xl tracking-tight"
+          ><img class="w-auto h-4" src="/SVG/logo.svg" alt=""
+        /></a>
+
+        <a
+          id="login-link"
+          href="/"
+          hidden
+          class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+        >
+          Log in
+        </a>
 
         <button
           id="logout-button"
@@ -33,110 +43,174 @@
     </header>
     <main class="mx-auto px-5 py-10 max-w-2xl">
       <section id="auth-section" aria-labelledby="auth-heading" hidden>
-        <p class="font-medium text-stone-500 text-sm">A quieter place for updates</p>
-        <h1 id="auth-heading" class="mt-1 font-bold text-3xl tracking-tight">Log in</h1>
-      
-        <form id="auth-form" class="space-y-4 bg-white mt-8 p-5 border border-stone-300 rounded-2xl">
+        <p class="font-medium text-stone-500 text-sm">
+          A quieter place for updates
+        </p>
+        <h1 id="auth-heading" class="mt-1 font-bold text-3xl tracking-tight">
+          Log in
+        </h1>
+
+        <form
+          id="auth-form"
+          class="space-y-4 bg-white mt-8 p-5 border border-stone-300 rounded-2xl"
+        >
           <fieldset id="signup-fields" class="space-y-4" hidden disabled>
             <div>
-              <label for="display-name" class="font-semibold text-sm">Display name</label>
-              <input id="display-name" name="display_name" type="text" required maxlength="50"
+              <label for="display-name" class="font-semibold text-sm"
+                >Display name</label
+              >
+              <input
+                id="display-name"
+                name="display_name"
+                type="text"
+                required
+                maxlength="50"
                 autocomplete="name"
-                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full" />
+                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+              />
             </div>
-      
+
             <div>
-              <label for="username" class="font-semibold text-sm">Username</label>
-              <input id="username" name="username" type="text" required minlength="3" maxlength="20"
-                pattern="[a-z0-9_]+" autocapitalize="none" spellcheck="false" autocomplete="username"
+              <label for="username" class="font-semibold text-sm"
+                >Username</label
+              >
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minlength="3"
+                maxlength="20"
+                pattern="[a-z0-9_]+"
+                autocapitalize="none"
+                spellcheck="false"
+                autocomplete="username"
                 aria-describedby="username-hint"
-                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full" />
+                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+              />
               <p id="username-hint" class="mt-1 text-stone-500 text-sm">
                 3–20 lowercase letters, numbers or underscores.
               </p>
             </div>
           </fieldset>
-      
+
           <div>
             <label for="email" class="font-semibold text-sm">Email</label>
-            <input id="email" name="email" type="email" required autocomplete="email"
-              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full" />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+            />
           </div>
-      
+
           <div>
             <label for="password" class="font-semibold text-sm">Password</label>
-            <input id="password" name="password" type="password" required minlength="8"
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minlength="8"
               autocomplete="current-password"
-              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full" />
+              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+            />
           </div>
-      
+
           <p id="auth-message" role="alert" class="text-red-700 text-sm"></p>
-      
-          <button id="auth-submit" type="submit"
-            class="bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-5 py-2.5 rounded-full w-full font-semibold text-white text-sm">
+
+          <button
+            id="auth-submit"
+            type="submit"
+            class="bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-5 py-2.5 rounded-full w-full font-semibold text-white text-sm"
+          >
             Log in
           </button>
         </form>
-      
         <p class="mt-4 text-stone-500 text-sm">
           <span id="auth-toggle-prompt">New to Bulletin?</span>
-          <button id="auth-toggle" type="button" class="font-semibold text-stone-950 underline">
+          <button
+            id="auth-toggle"
+            type="button"
+            class="font-semibold text-stone-950 underline"
+          >
             Create an account
           </button>
         </p>
       </section>
+      <div id="board" hidden>
+        <section aria-labelledby="page-heading">
+          <p class="font-medium text-stone-500 text-sm">Your board</p>
 
-      <div id="board"hidden >
-      <section aria-labelledby="page-heading">
-        <p class="font-medium text-stone-500 text-sm">Your board</p>
-
-        <h1 id="page-heading" class="mt-1 font-bold text-3xl tracking-tight">
-          What’s going on?
-        </h1>
-
-        <form id="bulletin-form" class="bg-white mt-8 p-5 border border-stone-300 rounded-2xl">
-          <label for="bulletin-content" class="font-semibold">
-            Post a bulletin
-          </label>
-
-          <textarea
-            id="bulletin-content"
-            name="content"
-            rows="4"
-            maxlength="500"
-            required
-            placeholder="Share something with your friends…"
-            class="block bg-stone-50 mt-3 p-4 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full placeholder:text-stone-400 resize-y"
-          ></textarea>
-
-          <div class="flex justify-between items-center mt-4">
+          <h1 id="page-heading" class="mt-1 font-bold text-3xl tracking-tight">
+            What’s going on?
+          </h1>
+          <form
+            id="bulletin-form"
+            class="bg-white mt-8 p-5 border border-stone-300 rounded-2xl"
+          >
+            <label for="bulletin-content" class="font-semibold">
+              Post a bulletin
+            </label>
+            <textarea
+              id="bulletin-content"
+              name="content"
+              rows="4"
+              maxlength="500"
+              required
+              placeholder="Share something with your friends…"
+              class="block bg-stone-50 mt-3 p-4 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full placeholder:text-stone-400 resize-y"
+            ></textarea>
+            <div class="flex justify-between items-center mt-4">
+              <p id="character-count" class="text-stone-500 text-sm">
+                500 characters remaining
+              </p>
+            
+              <button
+                type="submit"
+                class="bg-stone-950 hover:bg-stone-700 px-5 py-2.5 rounded-full font-semibold text-white text-sm"
+              >
+                Publish
+              </button>
+            </div>
+            
             <p id="post-error" role="alert" class="mt-3 text-red-700 text-sm"></p>
-            <p id="character-count" class="text-stone-500 text-sm">
-              500 characters remaining
-            </p>
+          </form>
+        </section>
 
-            <button
-              type="submit"
-              class="bg-stone-950 hover:bg-stone-700 px-5 py-2.5 rounded-full font-semibold text-white text-sm"
-            >
-              Publish
-            </button>
+        <section class="mt-12" aria-labelledby="recent-heading">
+          <h2 id="recent-heading" class="font-bold text-xl">
+            Recent bulletins
+          </h2>
+
+          <div id="bulletin-feed" aria-live="polite" class="space-y-4 mt-5">
+            <!-- Real posts will show up here. -->
           </div>
-        </form>
-      </section>
+          <p id="feed-status" class="mt-5 text-stone-500"></p>
+        </section>
+      </div>
+      <section id="profile-section" aria-labelledby="profile-name" hidden>
+        <div id="profile-details" hidden>
+          <p class="font-medium text-stone-500 text-sm">
+            @<span id="profile-username"></span>
+          </p>
+          <h1
+            id="profile-name"
+            class="mt-1 font-bold text-3xl tracking-tight"
+          ></h1>
+          <p id="profile-bio" class="mt-3 leading-7"></p>
+          <p class="mt-2 text-stone-500 text-sm">
+            Joined <time id="profile-joined"></time>
+          </p>
 
-      <section class="mt-12" aria-labelledby="recent-heading">
-        <h2 id="recent-heading" class="font-bold text-xl">Recent bulletins</h2>
-
-        <div
-        id="bulletin-feed"
-        aria-live="polite"
-        class="space-y-4 mt-5">
-        <!-- Real posts will show up here. -->
+          <h2 class="mt-12 font-bold text-xl">Bulletins</h2>
         </div>
-        <p id="feed-status" class="mt-5 text-stone-500"></p>
+
+        <p id="profile-status" class="mt-5 text-stone-500"></p>
+        <div id="profile-feed" class="space-y-4 mt-5"></div>
       </section>
-    </div>
     </main>
   </body>
 </html>

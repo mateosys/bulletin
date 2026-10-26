@@ -1,9 +1,14 @@
 import { supabase } from "./supabase.js";
+import { profileUsername } from "./route.js";
+
+const profileSection = document.querySelector("#profile-section");
+const loginLink = document.querySelector("#login-link");
 
 const authSection = document.querySelector("#auth-section");
 const board = document.querySelector("#board");
 const logoutButton = document.querySelector("#logout-button");
 
+// Authorizing QS
 const authForm = document.querySelector("#auth-form");
 const authHeading = document.querySelector("#auth-heading");
 const signupFields = document.querySelector("#signup-fields");
@@ -13,6 +18,8 @@ const authSubmit = document.querySelector("#auth-submit");
 const authToggle = document.querySelector("#auth-toggle");
 const authTogglePrompt = document.querySelector("#auth-toggle-prompt");
 const authMessage = document.querySelector("#auth-message");
+
+
 
 let mode = "login";
 
@@ -94,11 +101,16 @@ async function signUp(email, password, username, displayName) {
 
 // Show the right view for whoever is (or isn't) logged in
 function showView(session) {
-  const isLoggedIn = Boolean(session);
-  authSection.hidden = isLoggedIn;
-  board.hidden = !isLoggedIn;
-  logoutButton.hidden = !isLoggedIn;
-}
+    const isLoggedIn = Boolean(session);
+    const onProfile = Boolean(profileUsername);
+  
+    authSection.hidden = onProfile || isLoggedIn;
+    board.hidden = onProfile || !isLoggedIn;
+    profileSection.hidden = !onProfile;
+  
+    logoutButton.hidden = !isLoggedIn;
+    loginLink.hidden = isLoggedIn || !onProfile;
+  }
 
 supabase.auth.onAuthStateChange((event, session) => {
   showView(session);
