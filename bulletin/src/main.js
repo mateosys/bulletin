@@ -75,3 +75,11 @@ function createBulletin(content) {
 
   return article;
 }
+
+import { supabase } from "./supabase.js";
+
+async function testConnection() {
+  const { data, error } = await supabase.from("posts").select("*");
+  console.log({ data, error });
+}
+testConnection();
