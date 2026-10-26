@@ -110,6 +110,7 @@
           ></textarea>
 
           <div class="flex justify-between items-center mt-4">
+            <p id="post-error" role="alert" class="mt-3 text-red-700 text-sm"></p>
             <p id="character-count" class="text-stone-500 text-sm">
               500 characters remaining
             </p>
@@ -131,30 +132,9 @@
         id="bulletin-feed"
         aria-live="polite"
         class="space-y-4 mt-5">
-          <article class="bg-white p-5 border border-stone-300 rounded-2xl">
-            <header class="flex justify-between items-start gap-4">
-              <div>
-                <h3 class="font-semibold">Mateo</h3>
-                <p class="text-stone-500 text-sm">
-                  <time datetime="2026-09-30T11:30:00-05:00">
-                    September 30 at 11:30 AM
-                  </time>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                class="font-medium text-stone-500 hover:text-stone-950 text-sm"
-              >
-                Edit
-              </button>
-            </header>
-
-            <p class="mt-4 leading-7">
-              Building a quieter place to share updates with friends.
-            </p>
-          </article>
+        <!-- Real posts will show up here. -->
         </div>
+        <p id="feed-status" class="mt-5 text-stone-500"></p>
       </section>
     </div>
     </main>
