@@ -31,7 +31,14 @@ const profileCancelButton = document.querySelector("#profile-cancel");
 const profileSaveButton = document.querySelector("#profile-save");
 const myProfileLink = document.querySelector("#my-profile-link");
 
+// Friend elements
+const friendControls = document.querySelector("#friend-controls");
+const friendError = document.querySelector("#friend-error");
+
 let viewedProfile = null; // the profile currently on screen
+let viewedFriendship = null; // your friendship row with the profile on screen, if any
+
+const friendshipColumns = "id, requester_id, recipient_id, status";
 
 const maximumCharacters = bulletinInput.maxLength;
 
@@ -150,21 +157,50 @@ async function loadProfile(username) {
     return;
   }
 
-  document.title =   viewedProfile = profile;
+  viewedProfile = profile;
   renderProfileDetails(profile);
   profileEditButton.hidden = profile.id !== currentUserId;
 
+  viewedFriendship = null;
+
+  if (currentUserId && profile.id !== currentUserId) {
+    // RLS only returns friendships you're part of, so any row
+    // involving this person must be the one between the two of you
+    const { data: friendship, error: friendshipError } = await supabase
+      .from("friendships")
+      .select(friendshipColumns)
+      .or(`requester_id.eq.${profile.id},recipient_id.eq.${profile.id}`)
+      .maybeSingle();
+
+    if (friendshipError) console.error(friendshipError);
+    viewedFriendship = friendship ?? null;
+  }
+
+  renderFriendControls();
   profileDetails.hidden = false;
+  await loadProfilePosts();
+}
+
+async function loadProfilePosts() {
+  const isSelf = viewedProfile.id === currentUserId;
+  const isFriend = viewedFriendship?.status === "accepted";
+
+  if (!isSelf && !isFriend) {
+    profileFeed.replaceChildren();
+    profileStatus.textContent = `Only ${viewedProfile.display_name}'s friends can see their bulletins.`;
+    return;
+  }
+
   profileStatus.textContent = "Loading bulletins…";
 
-  const { data: posts, error: postsError } = await supabase
+  const { data: posts, error } = await supabase
     .from("posts")
     .select(postColumns)
-    .eq("user_id", profile.id)
+    .eq("user_id", viewedProfile.id)
     .order("created_at", { ascending: false });
 
-  if (postsError) {
-    console.error(postsError);
+  if (error) {
+    console.error(error);
     profileStatus.textContent = "Bulletins couldn't be loaded. Refresh to try again.";
     return;
   }
@@ -174,8 +210,106 @@ async function loadProfile(username) {
   );
 
   profileStatus.textContent =
-    posts.length === 0 ? `${profile.display_name} hasn't posted yet.` : "";
+    posts.length === 0 ? `${viewedProfile.display_name} hasn't posted yet.` : "";
 }
+
+const primaryButton =
+  "bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-4 py-2 rounded-full font-semibold text-white text-sm";
+const secondaryButton =
+  "hover:bg-stone-100 disabled:opacity-50 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm";
+
+function friendButton(action, label, style) {
+  return `<button type="button" data-action="${action}" class="${style}">${label}</button>`;
+}
+
+function renderFriendControls() {
+  friendError.textContent = "";
+
+  const isSelf = viewedProfile.id === currentUserId;
+
+  if (!currentUserId || isSelf) {
+    friendControls.hidden = true;
+    return;
+  }
+
+  const friendship = viewedFriendship;
+
+  if (!friendship) {
+    friendControls.innerHTML = friendButton("add", "Add friend", primaryButton);
+  } else if (friendship.status === "accepted") {
+    friendControls.innerHTML = `
+      <p class="font-medium text-sm">✓ Friends</p>
+      ${friendButton("unfriend", "Unfriend", secondaryButton)}
+    `;
+  } else if (friendship.requester_id === currentUserId) {
+    friendControls.innerHTML = `
+      <p class="text-stone-500 text-sm">Request sent</p>
+      ${friendButton("cancel", "Cancel request", secondaryButton)}
+    `;
+  } else {
+    friendControls.innerHTML = `
+      <p class="text-stone-500 text-sm">Wants to be friends</p>
+      ${friendButton("accept", "Accept", primaryButton)}
+      ${friendButton("decline", "Decline", secondaryButton)}
+    `;
+  }
+
+  friendControls.hidden = false;
+}
+
+friendControls.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+
+  if (action === "unfriend") {
+    const confirmed = confirm(`Remove ${viewedProfile.display_name} as a friend?`);
+    if (!confirmed) return;
+  }
+
+  const buttons = friendControls.querySelectorAll("button");
+  buttons.forEach((b) => (b.disabled = true));
+  friendError.textContent = "";
+
+  let result;
+
+  if (action === "add") {
+    result = await supabase
+      .from("friendships")
+      .insert({ recipient_id: viewedProfile.id })
+      .select(friendshipColumns)
+      .single();
+  } else if (action === "accept") {
+    result = await supabase
+      .from("friendships")
+      .update({ status: "accepted" })
+      .eq("id", viewedFriendship.id)
+      .select(friendshipColumns)
+      .single();
+  } else {
+    // cancel, decline and unfriend all remove the row
+    result = await supabase
+      .from("friendships")
+      .delete()
+      .eq("id", viewedFriendship.id);
+  }
+
+  if (result.error) {
+    console.error(result.error);
+    buttons.forEach((b) => (b.disabled = false));
+    friendError.textContent = "That didn't go through. Refresh the page and try again.";
+    return;
+  }
+
+  viewedFriendship = action === "add" || action === "accept" ? result.data : null;
+
+  renderFriendControls();
+  friendControls.querySelector("button")?.focus();
+
+  // Which posts you're allowed to see may have just changed
+  loadProfilePosts();
+});
 
 profileEditButton.addEventListener("click", () => {
   profileDisplayNameInput.value = viewedProfile.display_name;
@@ -441,16 +575,13 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 
   if (profileUsername) {
-    if (!session) {
-      profileEditButton.hidden = true;
-      profileForm.hidden = true;
-    }
-    if (event === "INITIAL_SESSION") {
+    if (!session) profileForm.hidden = true;
+
+    if (event === "INITIAL_SESSION" || event === "SIGNED_OUT") {
       setTimeout(() => loadProfile(profileUsername), 0);
     }
     return;
   }
-
   if (!session) {
     bulletinFeed.replaceChildren();
     return;
