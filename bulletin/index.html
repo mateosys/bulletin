@@ -22,23 +22,34 @@
           ><img class="w-auto h-4" src="/SVG/logo.svg" alt=""
         /></a>
 
-        <a
-          id="login-link"
-          href="/"
-          hidden
-          class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
-        >
-          Log in
-        </a>
+        <nav aria-label="Account" class="flex items-center gap-2">
+          <a
+            id="my-profile-link"
+            href="/"
+            hidden
+            class="hover:bg-stone-100 px-4 py-2 rounded-full font-medium text-sm"
+          >
+            Your profile
+          </a>
 
-        <button
-          id="logout-button"
-          type="button"
-          hidden
-          class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
-        >
-          Log out
-        </button>
+          <a
+            id="login-link"
+            href="/"
+            hidden
+            class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+          >
+            Log in
+          </a>
+
+          <button
+            id="logout-button"
+            type="button"
+            hidden
+            class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+          >
+            Log out
+          </button>
+        </nav>
       </div>
     </header>
     <main class="mx-auto px-5 py-10 max-w-2xl">
@@ -167,7 +178,7 @@
               <p id="character-count" class="text-stone-500 text-sm">
                 500 characters remaining
               </p>
-            
+
               <button
                 type="submit"
                 class="bg-stone-950 hover:bg-stone-700 px-5 py-2.5 rounded-full font-semibold text-white text-sm"
@@ -175,8 +186,12 @@
                 Publish
               </button>
             </div>
-            
-            <p id="post-error" role="alert" class="mt-3 text-red-700 text-sm"></p>
+
+            <p
+              id="post-error"
+              role="alert"
+              class="mt-3 text-red-700 text-sm"
+            ></p>
           </form>
         </section>
 
@@ -204,6 +219,72 @@
           <p class="mt-2 text-stone-500 text-sm">
             Joined <time id="profile-joined"></time>
           </p>
+          <button
+            id="profile-edit-button"
+            type="button"
+            hidden
+            class="hover:bg-stone-100 mt-4 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+          >
+            Edit profile
+          </button>
+
+          <form
+            id="profile-form"
+            hidden
+            class="space-y-4 bg-white mt-6 p-5 border border-stone-300 rounded-2xl"
+          >
+            <div>
+              <label for="profile-display-name" class="font-semibold text-sm"
+                >Display name</label
+              >
+              <input
+                id="profile-display-name"
+                type="text"
+                required
+                maxlength="50"
+                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+              />
+            </div>
+
+            <div>
+              <label for="profile-bio-input" class="font-semibold text-sm"
+                >Bio</label
+              >
+              <textarea
+                id="profile-bio-input"
+                rows="3"
+                maxlength="160"
+                aria-describedby="profile-bio-hint"
+                class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full resize-y"
+              ></textarea>
+              <p id="profile-bio-hint" class="mt-1 text-stone-500 text-sm">
+                Up to 160 characters.
+              </p>
+            </div>
+
+            <p
+              id="profile-form-error"
+              role="alert"
+              class="text-red-700 text-sm"
+            ></p>
+
+            <div class="flex justify-end gap-2">
+              <button
+                id="profile-cancel"
+                type="button"
+                class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                id="profile-save"
+                type="submit"
+                class="bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-4 py-2 rounded-full font-semibold text-white text-sm"
+              >
+                Save
+              </button>
+            </div>
+          </form>
 
           <h2 class="mt-12 font-bold text-xl">Bulletins</h2>
         </div>

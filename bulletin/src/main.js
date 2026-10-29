@@ -1,3 +1,4 @@
+
 import "./style.css";
 import "./auth.js";
 import { supabase } from "./supabase.js";
@@ -20,6 +21,17 @@ const profileBio = document.querySelector("#profile-bio");
 const profileJoined = document.querySelector("#profile-joined");
 const profileStatus = document.querySelector("#profile-status");
 const profileFeed = document.querySelector("#profile-feed");
+
+const profileEditButton = document.querySelector("#profile-edit-button");
+const profileForm = document.querySelector("#profile-form");
+const profileDisplayNameInput = document.querySelector("#profile-display-name");
+const profileBioInput = document.querySelector("#profile-bio-input");
+const profileFormError = document.querySelector("#profile-form-error");
+const profileCancelButton = document.querySelector("#profile-cancel");
+const profileSaveButton = document.querySelector("#profile-save");
+const myProfileLink = document.querySelector("#my-profile-link");
+
+let viewedProfile = null; // the profile currently on screen
 
 const maximumCharacters = bulletinInput.maxLength;
 
@@ -98,6 +110,24 @@ async function loadFeed() {
   }
 }
 
+// render profile details
+
+function renderProfileDetails(profile) {
+  document.title = `${profile.display_name} (@${profile.username}) · Bulletin`;
+
+  profileUsernameElement.textContent = profile.username;
+  profileName.textContent = profile.display_name;
+  profileBio.textContent = profile.bio ?? "";
+  profileBio.hidden = !profile.bio;
+
+  const joined = new Date(profile.created_at);
+  profileJoined.dateTime = joined.toISOString();
+  profileJoined.textContent = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(joined);
+}
+
 // load profile 
 async function loadProfile(username) {
   profileStatus.textContent = "Loading profile…";
@@ -120,19 +150,9 @@ async function loadProfile(username) {
     return;
   }
 
-  document.title = `${profile.display_name} (@${profile.username}) · Bulletin`;
-
-  profileUsernameElement.textContent = profile.username;
-  profileName.textContent = profile.display_name;
-  profileBio.textContent = profile.bio ?? "";
-  profileBio.hidden = !profile.bio;
-
-  const joined = new Date(profile.created_at);
-  profileJoined.dateTime = joined.toISOString();
-  profileJoined.textContent = new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(joined);
+  document.title =   viewedProfile = profile;
+  renderProfileDetails(profile);
+  profileEditButton.hidden = profile.id !== currentUserId;
 
   profileDetails.hidden = false;
   profileStatus.textContent = "Loading bulletins…";
@@ -155,6 +175,81 @@ async function loadProfile(username) {
 
   profileStatus.textContent =
     posts.length === 0 ? `${profile.display_name} hasn't posted yet.` : "";
+}
+
+profileEditButton.addEventListener("click", () => {
+  profileDisplayNameInput.value = viewedProfile.display_name;
+  profileBioInput.value = viewedProfile.bio ?? "";
+  profileFormError.textContent = "";
+
+  profileForm.hidden = false;
+  profileEditButton.hidden = true;
+  profileDisplayNameInput.focus();
+});
+
+function closeProfileForm() {
+  profileForm.hidden = true;
+  profileEditButton.hidden = false;
+  profileEditButton.focus();
+}
+
+profileCancelButton.addEventListener("click", closeProfileForm);
+
+profileForm.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeProfileForm();
+});
+
+profileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  profileFormError.textContent = "";
+
+  const displayName = profileDisplayNameInput.value.trim();
+  const bio = profileBioInput.value.trim();
+
+  if (!displayName) {
+    profileDisplayNameInput.focus();
+    return;
+  }
+
+  profileSaveButton.disabled = true;
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .update({ display_name: displayName, bio: bio || null })
+    .eq("id", currentUserId)
+    .select("id, username, display_name, bio, created_at")
+    .single();
+
+  profileSaveButton.disabled = false;
+
+  if (error) {
+    console.error(error);
+    profileFormError.textContent = "Your profile couldn't be saved. Please try again.";
+    return;
+  }
+
+  viewedProfile = profile;
+  renderProfileDetails(profile);
+
+  // Posts on this page still show the old name, so update them too
+  profileFeed.querySelectorAll(".bulletin-author").forEach((link) => {
+    link.textContent = profile.display_name;
+  });
+
+  closeProfileForm();
+});
+
+async function loadMyProfileLink() {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", currentUserId)
+    .maybeSingle();
+
+  if (profile) {
+    myProfileLink.href = `/u/${profile.username}`;
+    myProfileLink.hidden = false;
+  }
 }
 
 function createBulletin(post, { showActions = true } = {}) {
@@ -197,7 +292,7 @@ function createBulletin(post, { showActions = true } = {}) {
     post.updated_at === post.created_at;
 
   const authorLink = article.querySelector(".bulletin-author");
-  
+
   authorLink.textContent = post.profiles?.display_name ?? "Unknown";
     if (post.profiles) {
       authorLink.href = `/u/${post.profiles.username}`;
@@ -338,13 +433,24 @@ async function deleteBulletin(article) {
 supabase.auth.onAuthStateChange((event, session) => {
   currentUserId = session?.user.id ?? null;
 
+  // Header "Your profile" link, on every page
+  if (!session) {
+    myProfileLink.hidden = true;
+  } else if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
+    setTimeout(loadMyProfileLink, 0);
+  }
+
   if (profileUsername) {
+    if (!session) {
+      profileEditButton.hidden = true;
+      profileForm.hidden = true;
+    }
     if (event === "INITIAL_SESSION") {
       setTimeout(() => loadProfile(profileUsername), 0);
     }
     return;
   }
-  
+
   if (!session) {
     bulletinFeed.replaceChildren();
     return;
