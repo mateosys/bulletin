@@ -35,6 +35,15 @@ const myProfileLink = document.querySelector("#my-profile-link");
 const friendControls = document.querySelector("#friend-controls");
 const friendError = document.querySelector("#friend-error");
 
+
+// Friend Requests and user search
+const requestsSection = document.querySelector("#requests-section");
+const requestsList = document.querySelector("#requests-list");
+const searchForm = document.querySelector("#search-form");
+const searchInput = document.querySelector("#search-input");
+const searchStatus = document.querySelector("#search-status");
+const searchResults = document.querySelector("#search-results");
+
 let viewedProfile = null; // the profile currently on screen
 let viewedFriendship = null; // your friendship row with the profile on screen, if any
 
@@ -180,6 +189,85 @@ async function loadProfile(username) {
   profileDetails.hidden = false;
   await loadProfilePosts();
 }
+
+async function loadRequests() {
+  const { data: requests, error } = await supabase
+    .from("friendships")
+    .select("id, requester:profiles!friendships_requester_id_fkey (username, display_name)")
+    .eq("recipient_id", currentUserId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  requestsList.replaceChildren(...requests.map((request) => createRequestItem(request)));
+  requestsSection.hidden = requests.length === 0;
+}
+
+function createRequestItem(request) {
+  const item = document.createElement("li");
+  item.className =
+    "flex flex-wrap justify-between items-center gap-3 bg-white p-4 border border-stone-300 rounded-2xl";
+  item.dataset.friendshipId = request.id;
+
+  item.innerHTML = `
+    <a class="request-name font-semibold hover:underline"></a>
+    <div class="flex gap-2">
+      ${friendButton("accept", "Accept", primaryButton)}
+      ${friendButton("decline", "Decline", secondaryButton)}
+    </div>
+  `;
+
+  const name = request.requester.display_name;
+  const link = item.querySelector(".request-name");
+  link.textContent = name;
+  link.href = `/u/${request.requester.username}`;
+
+  // Screen readers hear "Accept Dummy Jones", not just "Accept"
+  item.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-label", `${button.textContent.trim()} ${name}`);
+  });
+
+  return item;
+}
+
+requestsList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const item = button.closest("li");
+  const buttons = item.querySelectorAll("button");
+  const accepting = button.dataset.action === "accept";
+
+  buttons.forEach((b) => (b.disabled = true));
+
+  const friendships = supabase.from("friendships");
+  const { error } = accepting
+    ? await friendships.update({ status: "accepted" }).eq("id", item.dataset.friendshipId)
+    : await friendships.delete().eq("id", item.dataset.friendshipId);
+
+  if (error) {
+    console.error(error);
+    buttons.forEach((b) => (b.disabled = false));
+    alert("That didn't go through. Please try again.");
+    return;
+  }
+
+  item.remove();
+
+  if (requestsList.children.length === 0) {
+    requestsSection.hidden = true;
+  }
+
+  // Move focus to the next request, or to the post box if none are left
+  (requestsList.querySelector("button") ?? bulletinInput).focus();
+
+  // A new friend means new posts in your feed
+  if (accepting) loadFeed();
+});
 
 async function loadProfilePosts() {
   const isSelf = viewedProfile.id === currentUserId;
@@ -584,11 +672,18 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
   if (!session) {
     bulletinFeed.replaceChildren();
+    requestsSection.hidden = true;
+    searchForm.reset();
+    searchResults.replaceChildren();
+    searchStatus.textContent = "";
     return;
   }
 
   if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
     // Run after the auth callback finishes (Supabase recommends this)
-    setTimeout(loadFeed, 0);
+    setTimeout(() => {
+      loadFeed();
+      loadRequests();
+    }, 0);
   }
 });

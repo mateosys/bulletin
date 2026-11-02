@@ -152,6 +152,10 @@
         </p>
       </section>
       <div id="board" hidden>
+        <section id="requests-section" aria-labelledby="requests-heading" hidden class="mb-10">
+          <h2 id="requests-heading" class="font-bold text-xl">Friend requests</h2>
+          <ul id="requests-list" class="space-y-3 mt-4"></ul>
+        </section>
         <section aria-labelledby="page-heading">
           <p class="font-medium text-stone-500 text-sm">Your board</p>
 
@@ -193,6 +197,32 @@
               class="mt-3 text-red-700 text-sm"
             ></p>
           </form>
+        </section>
+
+        <section class="mt-12" aria-labelledby="search-heading">
+          <h2 id="search-heading" class="font-bold text-xl">Find people</h2>
+        
+          <form id="search-form" role="search" class="flex gap-2 mt-4">
+            <label for="search-input" class="sr-only">Search by name or username</label>
+            <input
+              id="search-input"
+              type="search"
+              required
+              maxlength="50"
+              autocomplete="off"
+              placeholder="Search by name or username"
+              class="bg-white p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+            />
+            <button
+              type="submit"
+              class="hover:bg-stone-100 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm"
+            >
+              Search
+            </button>
+          </form>
+        
+          <p id="search-status" aria-live="polite" class="mt-3 text-stone-500 text-sm"></p>
+          <ul id="search-results" class="space-y-2 mt-3"></ul>
         </section>
 
         <section class="mt-12" aria-labelledby="recent-heading">
