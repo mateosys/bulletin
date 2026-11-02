@@ -31,6 +31,11 @@ const profileCancelButton = document.querySelector("#profile-cancel");
 const profileSaveButton = document.querySelector("#profile-save");
 const myProfileLink = document.querySelector("#my-profile-link");
 
+const friendsSection = document.querySelector("#friends-section");
+const friendsCount = document.querySelector("#friends-count");
+const friendsList = document.querySelector("#friends-list");
+const friendsStatus = document.querySelector("#friends-status");
+
 // Friend elements
 const friendControls = document.querySelector("#friend-controls");
 const friendError = document.querySelector("#friend-error");
@@ -187,8 +192,9 @@ async function loadProfile(username) {
 
   renderFriendControls();
   profileDetails.hidden = false;
-  await loadProfilePosts();
+  await Promise.all([loadProfilePosts(), loadProfileFriends()]);
 }
+
 
 async function loadRequests() {
   const { data: requests, error } = await supabase
@@ -269,6 +275,64 @@ requestsList.addEventListener("click", async (event) => {
   if (accepting) loadFeed();
 });
 
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  // Keep only letters, numbers, spaces and underscores,
+  // so typed text can't break the filter below
+  const term = searchInput.value.replace(/[^\p{L}\p{N}_ ]/gu, "").trim();
+
+  if (term.length < 2) {
+    searchResults.replaceChildren();
+    searchStatus.textContent = "Type at least 2 letters or numbers.";
+    return;
+  }
+
+  searchStatus.textContent = "Searching…";
+
+  const { data: people, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name")
+    .or(`username.ilike.%${term}%,display_name.ilike.%${term}%`)
+    .neq("id", currentUserId)
+    .order("display_name")
+    .limit(10);
+
+  if (error) {
+    console.error(error);
+    searchStatus.textContent = "Search isn't working right now. Please try again.";
+    return;
+  }
+
+  searchResults.replaceChildren(...people.map((person) => createSearchResult(person)));
+
+  searchStatus.textContent =
+    people.length === 0
+      ? `No one matches "${term}".`
+      : `${people.length} ${people.length === 1 ? "person" : "people"} found.`;
+});
+
+function createSearchResult(person) {
+  const item = document.createElement("li");
+
+  const link = document.createElement("a");
+  link.href = `/u/${person.username}`;
+  link.className = "block bg-white hover:bg-stone-50 p-4 border border-stone-300 rounded-2xl";
+
+  const name = document.createElement("span");
+  name.className = "block font-semibold";
+  name.textContent = person.display_name;
+
+  const handle = document.createElement("span");
+  handle.className = "block text-stone-500 text-sm";
+  handle.textContent = `@${person.username}`;
+
+  link.append(name, handle);
+  item.append(link);
+
+  return item;
+}
+
 async function loadProfilePosts() {
   const isSelf = viewedProfile.id === currentUserId;
   const isFriend = viewedFriendship?.status === "accepted";
@@ -299,7 +363,60 @@ async function loadProfilePosts() {
 
   profileStatus.textContent =
     posts.length === 0 ? `${viewedProfile.display_name} hasn't posted yet.` : "";
+
+    loadProfileFriends();
 }
+
+async function loadProfileFriends() {
+  const isSelf = viewedProfile.id === currentUserId;
+  const isFriend = viewedFriendship?.status === "accepted";
+
+  if (!isSelf && !isFriend) {
+    friendsSection.hidden = true;
+    friendsList.replaceChildren();
+    return;
+  }
+
+  const { data: friends, error } = await supabase.rpc("get_friends", {
+    target_id: viewedProfile.id,
+  });
+
+  friendsSection.hidden = false;
+
+  if (error) {
+    console.error(error);
+    friendsCount.textContent = "";
+    friendsList.replaceChildren();
+    friendsStatus.textContent = "Friends couldn't be loaded. Refresh to try again.";
+    return;
+  }
+
+  friendsCount.textContent = `(${friends.length})`;
+  friendsList.replaceChildren(...friends.map((friend) => createFriendChip(friend)));
+
+  if (friends.length > 0) {
+    friendsStatus.textContent = "";
+  } else if (isSelf) {
+    friendsStatus.textContent = "No friends yet. Use Find people on your board to add some.";
+  } else {
+    friendsStatus.textContent = `${viewedProfile.display_name} hasn't added any friends yet.`;
+  }
+}
+
+function createFriendChip(friend) {
+  const item = document.createElement("li");
+
+  const link = document.createElement("a");
+  link.href = `/u/${friend.username}`;
+  link.className =
+    "inline-block bg-white hover:bg-stone-50 px-4 py-2 border border-stone-300 rounded-full font-medium text-sm";
+  link.textContent = friend.id === currentUserId ? "You" : friend.display_name;
+
+  item.append(link);
+  return item;
+}
+
+
 
 const primaryButton =
   "bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-4 py-2 rounded-full font-semibold text-white text-sm";
