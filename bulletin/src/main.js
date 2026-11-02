@@ -48,6 +48,8 @@ const searchForm = document.querySelector("#search-form");
 const searchInput = document.querySelector("#search-input");
 const searchStatus = document.querySelector("#search-status");
 const searchResults = document.querySelector("#search-results");
+const requestsLink = document.querySelector("#requests-link");
+const requestsCountBadge = document.querySelector("#requests-count");
 
 let viewedProfile = null; // the profile currently on screen
 let viewedFriendship = null; // your friendship row with the profile on screen, if any
@@ -195,6 +197,30 @@ async function loadProfile(username) {
   await Promise.all([loadProfilePosts(), loadProfileFriends()]);
 }
 
+function updateRequestBadge(count) {
+  requestsCountBadge.textContent = count;
+  requestsLink.setAttribute(
+    "aria-label",
+    `${count} friend ${count === 1 ? "request" : "requests"}`
+  );
+  requestsLink.hidden = count === 0;
+}
+
+// For pages other than the board, where the full list isn't loaded
+async function loadRequestCount() {
+  const { count, error } = await supabase
+    .from("friendships")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", currentUserId)
+    .eq("status", "pending");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  updateRequestBadge(count);
+}
 
 async function loadRequests() {
   const { data: requests, error } = await supabase
@@ -211,6 +237,13 @@ async function loadRequests() {
 
   requestsList.replaceChildren(...requests.map((request) => createRequestItem(request)));
   requestsSection.hidden = requests.length === 0;
+  updateRequestBadge(requests.length);
+
+  // Arriving from the header link on another page
+  if (location.hash === "#requests-section" && requests.length > 0) {
+    requestsSection.scrollIntoView();
+    requestsList.querySelector("button").focus({ preventScroll: true });
+  }
 }
 
 function createRequestItem(request) {
@@ -460,6 +493,7 @@ function renderFriendControls() {
   }
 
   friendControls.hidden = false;
+
 }
 
 friendControls.addEventListener("click", async (event) => {
@@ -514,6 +548,8 @@ friendControls.addEventListener("click", async (event) => {
 
   // Which posts you're allowed to see may have just changed
   loadProfilePosts();
+  
+  if (action === "accept" || action === "decline") loadRequestCount();
 });
 
 profileEditButton.addEventListener("click", () => {
@@ -772,13 +808,16 @@ async function deleteBulletin(article) {
 supabase.auth.onAuthStateChange((event, session) => {
   currentUserId = session?.user.id ?? null;
 
-  // Header "Your profile" link, on every page
-  if (!session) {
+   // Header links, on every page
+   if (!session) {
     myProfileLink.hidden = true;
+    requestsLink.hidden = true;
   } else if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
-    setTimeout(loadMyProfileLink, 0);
+    setTimeout(() => {
+      loadMyProfileLink();
+      if (profileUsername) loadRequestCount();
+    }, 0);
   }
-
   if (profileUsername) {
     if (!session) profileForm.hidden = true;
 

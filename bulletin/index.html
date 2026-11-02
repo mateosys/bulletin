@@ -24,6 +24,18 @@
 
         <nav aria-label="Account" class="flex items-center gap-2">
           <a
+            id="requests-link"
+            href="/#requests-section"
+            hidden
+            class="inline-flex items-center gap-1.5 hover:bg-stone-100 px-3 py-2 rounded-full font-medium text-sm"
+          >
+            Requests
+            <span
+              id="requests-count"
+              class="bg-stone-950 px-2 py-0.5 rounded-full font-semibold text-white text-xs"
+            ></span>
+          </a>
+          <a
             id="my-profile-link"
             href="/"
             hidden
@@ -152,8 +164,15 @@
         </p>
       </section>
       <div id="board" hidden>
-        <section id="requests-section" aria-labelledby="requests-heading" hidden class="mb-10">
-          <h2 id="requests-heading" class="font-bold text-xl">Friend requests</h2>
+        <section
+          id="requests-section"
+          aria-labelledby="requests-heading"
+          hidden
+          class="mb-10"
+        >
+          <h2 id="requests-heading" class="font-bold text-xl">
+            Friend requests
+          </h2>
           <ul id="requests-list" class="space-y-3 mt-4"></ul>
         </section>
         <section aria-labelledby="page-heading">
@@ -201,9 +220,11 @@
 
         <section class="mt-12" aria-labelledby="search-heading">
           <h2 id="search-heading" class="font-bold text-xl">Find people</h2>
-        
+
           <form id="search-form" role="search" class="flex gap-2 mt-4">
-            <label for="search-input" class="sr-only">Search by name or username</label>
+            <label for="search-input" class="sr-only"
+              >Search by name or username</label
+            >
             <input
               id="search-input"
               type="search"
@@ -220,8 +241,12 @@
               Search
             </button>
           </form>
-        
-          <p id="search-status" aria-live="polite" class="mt-3 text-stone-500 text-sm"></p>
+
+          <p
+            id="search-status"
+            aria-live="polite"
+            class="mt-3 text-stone-500 text-sm"
+          ></p>
           <ul id="search-results" class="space-y-2 mt-3"></ul>
         </section>
 
@@ -267,9 +292,18 @@
             role="alert"
             class="mt-2 text-red-700 text-sm"
           ></p>
-          <section id="friends-section" aria-labelledby="friends-heading" hidden class="mt-10">
+          <section
+            id="friends-section"
+            aria-labelledby="friends-heading"
+            hidden
+            class="mt-10"
+          >
             <h2 id="friends-heading" class="font-bold text-xl">
-              Friends <span id="friends-count" class="font-medium text-stone-500"></span>
+              Friends
+              <span
+                id="friends-count"
+                class="font-medium text-stone-500"
+              ></span>
             </h2>
             <ul id="friends-list" class="flex flex-wrap gap-2 mt-4"></ul>
             <p id="friends-status" class="mt-3 text-stone-500 text-sm"></p>
