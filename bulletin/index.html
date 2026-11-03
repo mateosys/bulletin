@@ -210,6 +210,27 @@
               </button>
             </div>
 
+            <div class="mt-3">
+              <input
+                id="bulletin-images"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                aria-describedby="image-hint"
+                class="sr-only peer"
+              />
+              <label
+                for="bulletin-images"
+                class="inline-block hover:bg-stone-100 peer-disabled:opacity-50 px-4 py-2 border border-stone-300 rounded-full peer-focus-visible:ring-2 peer-focus-visible:ring-stone-950 font-medium text-sm cursor-pointer peer-disabled:cursor-not-allowed"
+              >
+                Add photos
+              </label>
+              <p id="image-hint" class="mt-1 text-stone-500 text-sm">
+                Up to 4 photos. Describe each one for people who can't see it.
+              </p>
+              <ul id="image-previews" class="gap-3 grid grid-cols-2 mt-3"></ul>
+            </div>
+      
             <p
               id="post-error"
               role="alert"
@@ -372,6 +393,14 @@
 
         <p id="profile-status" class="mt-5 text-stone-500"></p>
         <div id="profile-feed" class="space-y-4 mt-5"></div>
+        <details id="archive" hidden class="mt-12">
+          <summary class="font-bold text-xl cursor-pointer">Archive</summary>
+          <p class="mt-2 text-stone-500 text-sm">
+            Bulletins move here 15 days after posting. Only you can see them.
+          </p>
+          <p id="archive-status" class="mt-5 text-stone-500"></p>
+          <div id="archive-feed" class="space-y-4 mt-5"></div>
+        </details>
       </section>
     </main>
   </body>
