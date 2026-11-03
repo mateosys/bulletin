@@ -129,7 +129,8 @@
             />
           </div>
 
-          <div>
+          <!-- NEW: id on this wrapper so the password field can be hidden in "reset" mode -->
+          <div id="password-field">
             <label for="password" class="font-semibold text-sm">Password</label>
             <input
               id="password"
@@ -140,6 +141,14 @@
               autocomplete="current-password"
               class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
             />
+            <!-- NEW: forgot password link (only shown in "log in" mode) -->
+            <button
+              id="forgot-password"
+              type="button"
+              class="mt-2 font-medium text-stone-500 hover:text-stone-950 text-sm underline"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <p id="auth-message" role="alert" class="text-red-700 text-sm"></p>
@@ -162,6 +171,54 @@
             Create an account
           </button>
         </p>
+      </section>
+
+      <!-- NEW: shown after someone opens the reset link from their email -->
+      <section id="new-password-section" aria-labelledby="new-password-heading" hidden>
+        <h1 id="new-password-heading" class="font-bold text-3xl tracking-tight">
+          Set a new password
+        </h1>
+
+        <form
+          id="new-password-form"
+          class="space-y-4 bg-white mt-8 p-5 border border-stone-300 rounded-2xl"
+        >
+          <div>
+            <label for="new-password" class="font-semibold text-sm">New password</label>
+            <input
+              id="new-password"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              aria-describedby="new-password-hint"
+              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+            />
+            <p id="new-password-hint" class="mt-1 text-stone-500 text-sm">At least 8 characters.</p>
+          </div>
+
+          <div>
+            <label for="confirm-password" class="font-semibold text-sm">Confirm new password</label>
+            <input
+              id="confirm-password"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              class="block bg-stone-50 mt-2 p-3 border border-stone-300 focus:border-stone-950 rounded-xl focus:outline-none w-full"
+            />
+          </div>
+
+          <p id="new-password-message" role="alert" class="text-red-700 text-sm"></p>
+
+          <button
+            id="new-password-submit"
+            type="submit"
+            class="bg-stone-950 hover:bg-stone-700 disabled:opacity-50 px-5 py-2.5 rounded-full w-full font-semibold text-white text-sm"
+          >
+            Save new password
+          </button>
+        </form>
       </section>
       <div id="board" hidden>
         <section
@@ -272,9 +329,20 @@
         </section>
 
         <section class="mt-12" aria-labelledby="recent-heading">
-          <h2 id="recent-heading" class="font-bold text-xl">
+          <!-- NEW: tabindex="-1" lets the code move focus here after "Show new bulletins" -->
+          <h2 id="recent-heading" tabindex="-1" class="focus:outline-none font-bold text-xl">
             Recent bulletins
           </h2>
+
+          <!-- NEW: appears when friends post while you're on the page -->
+          <div aria-live="polite">
+            <button
+              id="new-posts-button"
+              type="button"
+              hidden
+              class="bg-stone-950 hover:bg-stone-700 mt-4 px-4 py-2 rounded-full w-full font-semibold text-white text-sm"
+            ></button>
+          </div>
 
           <div id="bulletin-feed" aria-live="polite" class="space-y-4 mt-5">
             <!-- Real posts will show up here. -->
