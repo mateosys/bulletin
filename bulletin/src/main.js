@@ -12,6 +12,12 @@ const publishButton = bulletinForm.querySelector('button[type="submit"]');
 const postError = document.querySelector("#post-error");
 const feedStatus = document.querySelector("#feed-status");
 
+// NEW: live updates
+const newPostsButton = document.querySelector("#new-posts-button");
+const recentHeading = document.querySelector("#recent-heading");
+let liveChannel = null; // the open Realtime connection, while logged in
+let newPostCount = 0; // friends' posts that arrived since the feed last loaded
+
 // image content
 const imageInput = document.querySelector("#bulletin-images");
 const imagePreviews = document.querySelector("#image-previews");
@@ -319,6 +325,10 @@ bulletinForm.addEventListener("submit", async (event) => {
 });
 
 async function loadFeed() {
+  // NEW: a fresh load includes any new posts, so reset the "Show new" button
+  newPostCount = 0;
+  newPostsButton.hidden = true;
+
   feedStatus.hidden = false;
   feedStatus.textContent = "Loading bulletins…";
 
@@ -1038,6 +1048,28 @@ function setUpComments(article, post) {
 
   updateSummary();
 
+  // NEW: live comments. The Realtime code sends a "comment-change" event
+  // to this card when someone adds or deletes a comment on it.
+  article.addEventListener("comment-change", (event) => {
+    const comment = event.detail;
+    const existing = list.querySelector(`li[data-comment-id="${comment.id}"]`);
+
+    // Already on screen (it was just deleted): swap in the new version
+    if (existing) {
+      existing.replaceWith(createComment(comment, post));
+      return;
+    }
+
+    // Deleted, but its comments aren't open: the count doesn't change,
+    // since deleted comments still take up a spot
+    if (comment.deleted_by) return;
+
+    // A new comment: always count it, and show it if the comments are open
+    count += 1;
+    updateSummary();
+    if (loaded) list.append(createComment(comment, post));
+  });
+
   // Load this post's comments the first time it's opened
   details.addEventListener("toggle", async () => {
     if (!details.open || loaded) return;
@@ -1322,6 +1354,99 @@ async function deleteBulletin(article) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// NEW: live updates (Supabase Realtime)
+// ---------------------------------------------------------------------------
+
+function startLiveUpdates() {
+  stopLiveUpdates();
+
+  liveChannel = supabase
+    .channel("live-updates")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "posts" },
+      handleNewPost
+    )
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "comments" },
+      handleCommentChange
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "comments" },
+      handleCommentChange
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "friendships",
+        filter: `recipient_id=eq.${currentUserId}`,
+      },
+      handleNewRequest
+    )
+    .subscribe();
+}
+
+function stopLiveUpdates() {
+  if (liveChannel) {
+    supabase.removeChannel(liveChannel);
+    liveChannel = null;
+  }
+}
+
+// A friend posted. Don't push it into the feed while someone is reading;
+// offer a button instead (by the time it's clicked, any photos are uploaded too)
+function handleNewPost(payload) {
+  if (profileUsername || payload.new.user_id === currentUserId) return;
+
+  newPostCount += 1;
+  newPostsButton.textContent = `Show ${newPostCount} new ${
+    newPostCount === 1 ? "bulletin" : "bulletins"
+  }`;
+  newPostsButton.hidden = false;
+}
+
+newPostsButton.addEventListener("click", async () => {
+  await loadFeed();
+  recentHeading.focus(); // the button disappears, so give focus a home
+});
+
+// Someone commented, or a comment was deleted
+async function handleCommentChange(payload) {
+  const { id, post_id, user_id } = payload.new;
+
+  // Your own new comments are already on screen
+  if (payload.eventType === "INSERT" && user_id === currentUserId) return;
+
+  // Only matters if that bulletin is on this page
+  const article = document.querySelector(`article[data-post-id="${post_id}"]`);
+  if (!article) return;
+
+  // Realtime sends the bare row, so fetch it again with the commenter's name
+  const { data: comment, error } = await supabase
+    .from("comments")
+    .select(commentColumns)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !comment) return;
+
+  article.dispatchEvent(new CustomEvent("comment-change", { detail: comment }));
+}
+
+// Someone sent you a friend request
+function handleNewRequest() {
+  if (profileUsername) {
+    loadRequestCount();
+  } else {
+    loadRequests();
+  }
+}
+
 supabase.auth.onAuthStateChange((event, session) => {
   currentUserId = session?.user.id ?? null;
 
@@ -1329,10 +1454,12 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (!session) {
     myProfileLink.hidden = true;
     requestsLink.hidden = true;
+    stopLiveUpdates(); // NEW
   } else if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
     setTimeout(() => {
       loadMyProfileLink();
       if (profileUsername) loadRequestCount();
+      startLiveUpdates(); // NEW
     }, 0);
   }
   if (profileUsername) {
